@@ -1,3 +1,7 @@
+"use client";
+
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 import Link from "next/link";
 import {
   Smartphone,
@@ -41,25 +45,44 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export function CategoryGrid() {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-40px" });
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={{
+        hidden: {},
+        visible: { transition: { staggerChildren: 0.04 } },
+      }}
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+    >
       {CATEGORY_SEED.map((cat) => {
         const Icon = iconMap[cat.icon] || MoreHorizontal;
         return (
-          <Link
+          <motion.div
             key={cat.slug}
-            href={`/categories/${cat.slug}`}
-            className="group flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-center transition-all hover:border-brand-300 hover:bg-brand-50 hover:shadow-md"
+            variants={{
+              hidden: { opacity: 0, y: 16, scale: 0.95 },
+              visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35 } },
+            }}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 transition-colors group-hover-scroll">
-              <Icon className="h-6 w-6" />
-            </div>
-            <span className="text-xs font-medium text-gray-700">
-              {cat.name.en}
-            </span>
-          </Link>
+            <Link
+              href={`/categories/${cat.slug}`}
+              className="group flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-center transition-all hover:border-brand-300 hover:bg-brand-50 hover:shadow-md"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 transition-colors group-hover:bg-brand-200">
+                <Icon className="h-6 w-6" />
+              </div>
+              <span className="text-xs font-medium text-gray-700">
+                {cat.name.en}
+              </span>
+            </Link>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

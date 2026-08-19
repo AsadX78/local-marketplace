@@ -9,7 +9,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { timeAgo, cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Conversation, Message } from "@/lib/types";
 
 export default function ChatPage() {
@@ -169,14 +172,19 @@ export default function ChatPage() {
           <div className="flex flex-col">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setActiveConvo(null)}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden"
+                    onClick={() => setActiveConvo(null)}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Back</TooltipContent>
+              </Tooltip>
               <Avatar
                 src={getOther(activeConvo)?.avatar_url ?? undefined}
                 alt={getOther(activeConvo)?.full_name ?? undefined}
@@ -194,37 +202,44 @@ export default function ChatPage() {
             </div>
 
             {/* Message list */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => {
-                const isMine = msg.sender_id === user.id;
-                return (
-                  <div
-                    key={msg.id}
-                    className={cn("flex", isMine ? "justify-end" : "justify-start")}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm",
-                        isMine
-                          ? "bg-brand-600 text-white rounded-br-md"
-                          : "bg-gray-100 text-gray-900 rounded-bl-md"
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                      <p
-                        className={cn(
-                          "mt-1 text-[10px]",
-                          isMine ? "text-brand-200" : "text-gray-400"
-                        )}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
+                <AnimatePresence initial={false}>
+                  {messages.map((msg) => {
+                    const isMine = msg.sender_id === user.id;
+                    return (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn("flex", isMine ? "justify-end" : "justify-start")}
                       >
-                        {timeAgo(msg.created_at)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEnd} />
-            </div>
+                        <div
+                          className={cn(
+                            "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                            isMine
+                              ? "bg-brand-600 text-white rounded-br-md shadow-brand-600/20"
+                              : "bg-gray-100 text-gray-900 rounded-bl-md"
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <p
+                            className={cn(
+                              "mt-1 text-[10px]",
+                              isMine ? "text-brand-200" : "text-gray-400"
+                            )}
+                          >
+                            {timeAgo(msg.created_at)}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+                <div ref={messagesEnd} />
+              </div>
+            </ScrollArea>
 
             {/* Input */}
             <div className="border-t border-gray-200 p-3">

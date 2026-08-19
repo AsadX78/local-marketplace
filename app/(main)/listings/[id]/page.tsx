@@ -19,6 +19,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageCarousel } from "@/components/listings/ImageCarousel";
 import { MapView } from "@/components/listings/MapViewLoader";
+import { ScrollReveal } from "@/components/motion/ScrollReveal";
 
 export const dynamicRoute = "force-dynamic";
 
@@ -150,40 +151,45 @@ export default async function ListingDetailPage({
           </div>
 
           {/* Description */}
-          <div className="rounded-xl bg-white border border-gray-200 p-6">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">Description</h2>
-            <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-              {listing.description}
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="rounded-xl bg-white border border-gray-200 p-6">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900">Description</h2>
+              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                {listing.description}
+              </p>
+            </div>
+          </ScrollReveal>
 
           {/* Location + map */}
-          <div className="rounded-xl bg-white border border-gray-200 p-6">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">Location</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-              <MapPin className="h-4 w-4" />
-              {listing.location_lga && <span>{listing.location_lga},</span>}
-              {listing.location_state && <span>{listing.location_state}</span>}
-              {!listing.location_state && <span>Nigeria</span>}
-            </div>
-            {listing.latitude && listing.longitude ? (
-              <MapView
-                lat={listing.latitude}
-                lng={listing.longitude}
-                popup={listing.title}
-              />
-            ) : (
-              <div className="h-[256px] flex items-center justify-center rounded-xl bg-gray-100 text-gray-400">
-                <MapPin className="mr-2 h-5 w-5" /> Location not set
+          <ScrollReveal>
+            <div className="rounded-xl bg-white border border-gray-200 p-6">
+              <h2 className="mb-3 text-lg font-semibold text-gray-900">Location</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                <MapPin className="h-4 w-4" />
+                {listing.location_lga && <span>{listing.location_lga},</span>}
+                {listing.location_state && <span>{listing.location_state}</span>}
+                {!listing.location_state && <span>Nigeria</span>}
               </div>
-            )}
-          </div>
+              {listing.latitude && listing.longitude ? (
+                <MapView
+                  lat={listing.latitude}
+                  lng={listing.longitude}
+                  popup={listing.title}
+                />
+              ) : (
+                <div className="h-[256px] flex items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                  <MapPin className="mr-2 h-5 w-5" /> Location not set
+                </div>
+              )}
+            </div>
+          </ScrollReveal>
 
           {/* Reviews */}
-          <div className="rounded-xl bg-white border border-gray-200 p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Seller Reviews ({reviews.length})
-            </h2>
+          <ScrollReveal>
+            <div className="rounded-xl bg-white border border-gray-200 p-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Seller Reviews ({reviews.length})
+              </h2>
             {reviews.length > 0 ? (
               <div className="space-y-4">
                 {reviews.map((review: {
@@ -230,7 +236,8 @@ export default async function ListingDetailPage({
             ) : (
               <p className="text-sm text-gray-500">No reviews yet for this seller.</p>
             )}
-          </div>
+            </div>
+          </ScrollReveal>
         </div>
 
         {/* Right: seller card + actions */}
@@ -324,8 +331,9 @@ export default async function ListingDetailPage({
 
       {/* Similar Listings */}
       {similarListings.length > 0 && (
-        <section className="mt-16">
-          <h2 className="mb-6 text-xl font-bold text-gray-900">Similar Listings</h2>
+        <ScrollReveal>
+          <section className="mt-16">
+            <h2 className="mb-6 text-xl font-bold text-gray-900">Similar Listings</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {similarListings.map((s: { id: string; title: string; images: string[]; price: number; currency: string; created_at: string; location_state: string; location_lga: string; profile?: { full_name: string; avatar_url: string }; category?: Record<string, unknown>; price_negotiable: boolean }) => (
               <Link
@@ -352,7 +360,8 @@ export default async function ListingDetailPage({
               </Link>
             ))}
           </div>
-        </section>
+          </section>
+        </ScrollReveal>
       )}
     </div>
   );

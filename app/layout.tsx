@@ -3,6 +3,8 @@ import "./globals.css";
 import { I18nProvider } from "@/components/i18n/I18nProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: {
@@ -39,11 +41,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col">
-        <I18nProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </I18nProvider>
+        <TooltipProvider>
+          <I18nProvider>
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </I18nProvider>
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              className: "rounded-xl border-gray-200 shadow-lg",
+            }}
+          />
+        </TooltipProvider>
       </body>
     </html>
   );

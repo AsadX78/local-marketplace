@@ -6,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { timeAgo } from "@/lib/utils";
 import { CheckCircle, AlertTriangle } from "lucide-react";
 import type { Report } from "@/lib/types";
+
+type StatusFilter = "all" | "open" | "reviewed" | "resolved";
 
 export default function AdminReportsPage() {
   const { isAdmin } = useAuth();
   const [reports, setReports] = React.useState<Report[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = React.useState<StatusFilter>("all");
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -41,6 +45,11 @@ export default function AdminReportsPage() {
     setActionLoading(null);
   }
 
+  const filtered = reports.filter((r) => {
+    if (filter === "all") return true;
+    return r.status === filter;
+  });
+
   if (!isAdmin) {
     return <div className="flex min-h-[50vh] items-center justify-center text-gray-500">Access denied.</div>;
   }
@@ -51,23 +60,40 @@ export default function AdminReportsPage() {
     resolved: "bg-green-100 text-green-800",
   };
 
+  const counts = {
+    all: reports.length,
+    open: reports.filter((r) => r.status === "open").length,
+    reviewed: reports.filter((r) => r.status === "reviewed").length,
+    resolved: reports.filter((r) => r.status === "resolved").length,
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Reports</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
+          <TabsList>
+            <TabsTrigger value="all">All ({counts.all})</TabsTrigger>
+            <TabsTrigger value="open">Open ({counts.open})</TabsTrigger>
+            <TabsTrigger value="reviewed">Reviewed ({counts.reviewed})</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved ({counts.resolved})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
       {loading ? (
         <div className="flex py-20 justify-center"><Spinner size="lg" /></div>
-      ) : reports.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="py-20 text-center text-gray-400">
           <AlertTriangle className="mx-auto h-10 w-10" />
-          <p className="mt-3">No reports yet</p>
+          <p className="mt-3">No reports found</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {reports.map((report) => (
+        <div className="mt-6 space-y-3">
+          {filtered.map((report) => (
             <div
               key={report.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5"
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50/50 sm:p-5"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">

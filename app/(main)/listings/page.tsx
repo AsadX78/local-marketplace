@@ -4,6 +4,7 @@ import { SearchFilters } from "@/components/search/SearchFilters";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { Button } from "@/components/ui/button";
 import { createServerClientInstance } from "@/lib/supabase/server";
+import { ListingsResults } from "./ListingsResults";
 import type { Listing } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -101,11 +102,7 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
         {/* Results */}
         <div>
           {listings.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {listings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            <ListingsResults listings={listings} />
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white py-20 text-center">
               <SearchX className="mx-auto h-12 w-12 text-gray-300" />

@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Modal } from "@/components/ui/modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatPrice, timeAgo } from "@/lib/utils";
 import { CheckCircle, XCircle, Eye } from "lucide-react";
 import type { Listing } from "@/lib/types";
@@ -76,18 +76,14 @@ export default function AdminListingsPage() {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Manage Listings</h1>
-        <div className="flex gap-2">
-          {(["pending", "approved", "rejected", "all"] as const).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilter(f)}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </Button>
-          ))}
-        </div>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+          <TabsList>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {loading ? (
@@ -164,33 +160,33 @@ export default function AdminListingsPage() {
         </div>
       )}
 
-      {/* Reject Modal */}
-      <Modal
-        isOpen={!!rejectModal}
-        onClose={() => setRejectModal(null)}
-        title="Reject Listing"
-        size="sm"
-      >
-        <p className="text-sm text-gray-600 mb-4">
-          Provide a reason for rejection (the seller will see this):
-        </p>
-        <Textarea
-          rows={3}
-          placeholder="e.g. Listing appears to be fraudulent / violates guidelines..."
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-        />
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="ghost" onClick={() => setRejectModal(null)}>Cancel</Button>
-          <Button
-            variant="destructive"
-            onClick={() => rejectModal && rejectListing(rejectModal)}
-            disabled={actionLoading === rejectModal}
-          >
-            Reject
-          </Button>
-        </div>
-      </Modal>
+      {/* Reject Dialog */}
+      <Dialog open={!!rejectModal} onOpenChange={(open) => { if (!open) setRejectModal(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Listing</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejection (the seller will see this):
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={3}
+            placeholder="e.g. Listing appears to be fraudulent / violates guidelines..."
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRejectModal(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => rejectModal && rejectListing(rejectModal)}
+              disabled={actionLoading === rejectModal}
+            >
+              Reject
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
