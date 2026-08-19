@@ -35,27 +35,6 @@ export async function createServerClientInstance() {
 }
 
 /**
- * Service role client (ADMIN ONLY - bypasses RLS)
- * NEVER use in client components or expose to browser
- * Only use in server-side API routes that have verified admin privileges
- */
-export function createServiceRoleClient() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
-  }
-  // Use the admin client from supabase-js directly for service role
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient: createAdminClient } = require('@supabase/supabase-js');
-  return createAdminClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
-/**
  * Lazy Stripe client initialization.
  * Avoids module-load errors when STRIPE_SECRET_KEY is a placeholder.
  */
