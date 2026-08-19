@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
 import { formatPrice, timeAgo } from "@/lib/utils";
-import { CheckCircle, XCircle, Eye, Search } from "lucide-react";
+import { CheckCircle, XCircle, Eye } from "lucide-react";
 import type { Listing } from "@/lib/types";
 
 export default function AdminListingsPage() {
@@ -29,36 +28,32 @@ export default function AdminListingsPage() {
 
   async function loadListings() {
     setLoading(true);
-    const supabase = createClient();
-    let query = supabase
-      .from("listings")
-      .select("*, profile:profiles!listings_user_id_fkey(full_name, avatar_url), category:categories!listings_category_id_fkey(name, slug)")
-      .order("created_at", { ascending: false });
-
-    if (filter !== "all") {
-      query = query.eq("status", filter);
+    const res = await fetch(`/api/admin/listings?status=${filter}`);
+    if (res.ok) {
+      const { data } = await res.json();
+      setListings((data as Listing[]) || []);
     }
-
-    const { data } = await query.limit(50);
-    setListings((data as Listing[]) || []);
     setLoading(false);
   }
 
   async function approveListing(id: string) {
     setActionLoading(id);
-    const supabase = createClient();
-    await supabase.from("listings").update({ status: "approved", admin_note: null }).eq("id", id);
+    await fetch(`/api/listings/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "approve" }),
+    });
     await loadListings();
     setActionLoading(null);
   }
 
   async function rejectListing(id: string) {
     setActionLoading(id);
-    const supabase = createClient();
-    await supabase
-      .from("listings")
-      .update({ status: "rejected", admin_note: rejectReason || "Does not meet guidelines" })
-      .eq("id", id);
+    await fetch(`/api/listings/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reject", reason: rejectReason || "Does not meet guidelines" }),
+    });
     setRejectModal(null);
     setRejectReason("");
     await loadListings();

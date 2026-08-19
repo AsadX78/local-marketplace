@@ -11,7 +11,6 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { CATEGORY_SEED, NIGERIAN_STATES } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
 import { ImagePlus, X, ChevronRight } from "lucide-react";
 
 export default function CreateListingPage() {
@@ -27,10 +26,8 @@ export default function CreateListingPage() {
   const [categoryMap, setCategoryMap] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("categories")
-      .select("id, slug")
+    fetch("/api/categories")
+      .then((r) => r.json())
       .then(({ data }) => {
         if (data) {
           const map: Record<string, string> = {};
@@ -39,7 +36,8 @@ export default function CreateListingPage() {
           });
           setCategoryMap(map);
         }
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const [form, setForm] = React.useState({
@@ -89,7 +87,6 @@ export default function CreateListingPage() {
     if (!user) return;
     setError(null);
 
-    // Validate against DB CHECK constraints before submitting
     const title = form.title.trim();
     const description = form.description.trim();
     if (title.length < 5 || title.length > 200) {
@@ -111,42 +108,42 @@ export default function CreateListingPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Upload images
       const imageUrls: string[] = [];
       for (const img of images) {
-        const ext = img.name.split(".").pop() || "jpg";
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("listings")
-          .upload(fileName, img, { upsert: false });
-        if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
-        const { data: urlData } = supabase.storage
-          .from("listings")
-          .getPublicUrl(uploadData.path);
-        imageUrls.push(urlData.publicUrl);
+        const formData = new FormData();
+        formData.append("file", img);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!res.ok) {
+          const { error: errMsg } = await res.json();
+          throw new Error(errMsg || "Image upload failed");
+        }
+        const { url } = await res.json();
+        imageUrls.push(url);
       }
 
-      // Resolve category slug -> UUID
       const categoryId = categoryMap[form.subcategory] || categoryMap[form.category];
       if (!categoryId) throw new Error("Please select a valid category");
 
-      // Create listing
-      const { error: insertError } = await supabase.from("listings").insert({
-        user_id: user.id,
-        category_id: categoryId,
-        title,
-        description,
-        price: form.price ? parseFloat(form.price) : null,
-        price_negotiable: form.priceNegotiable,
-        images: imageUrls,
-        location_state: form.state,
-        location_lga: form.lga,
-        location_address: form.address,
+      const res = await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          description,
+          price: form.price ? parseFloat(form.price) : null,
+          price_negotiable: form.priceNegotiable,
+          category_id: categoryId,
+          images: imageUrls,
+          location_state: form.state,
+          location_lga: form.lga,
+          location_address: form.address,
+        }),
       });
 
-      if (insertError) throw new Error(insertError.message);
+      if (!res.ok) {
+        const { error: errMsg } = await res.json();
+        throw new Error(errMsg || "Failed to create listing");
+      }
       router.push("/listings?submitted=1");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create listing");

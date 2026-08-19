@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
 import { NIGERIAN_STATES, LANGUAGES } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
   const { user, profile, setProfile } = useAuth();
@@ -30,7 +29,6 @@ export default function SettingsPage() {
     is_seller: profile?.is_seller || false,
   });
 
-  // Update form when profile loads
   React.useEffect(() => {
     if (profile) {
       setForm({
@@ -55,20 +53,18 @@ export default function SettingsPage() {
     setAvatarLoading(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop() || "jpg";
-      const fileName = `avatars/${user.id}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: urlData.publicUrl })
-        .eq("id", user.id);
-      if (updateError) throw updateError;
-      setProfile({ ...profile!, avatar_url: urlData.publicUrl });
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const { error: errMsg } = await res.json();
+        throw new Error(errMsg || "Upload failed");
+      }
+      const { url } = await res.json();
+      setProfile({ ...profile!, avatar_url: url });
       setMessage("Avatar updated!");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to upload avatar");
@@ -83,20 +79,15 @@ export default function SettingsPage() {
     setError(null);
     setMessage(null);
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          full_name: form.full_name,
-          phone: form.phone,
-          bio: form.bio,
-          location_state: form.location_state,
-          location_lga: form.location_lga,
-          preferred_language: form.preferred_language,
-          is_seller: form.is_seller,
-        })
-        .eq("id", user.id);
-      if (updateError) throw updateError;
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const { error: errMsg } = await res.json();
+        throw new Error(errMsg || "Update failed");
+      }
       setProfile({ ...profile!, ...form });
       setMessage("Profile updated successfully!");
     } catch (err: unknown) {

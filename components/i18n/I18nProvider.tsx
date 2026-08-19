@@ -15,20 +15,10 @@ const I18nContext = React.createContext<I18nContextValue | null>(null);
 
 const STORAGE_KEY = "lm_language";
 
-// Local fallback dictionary (used before Supabase loads or offline)
-const FALLBACK: Record<LanguageCode, Record<string, string>> = {
-  en: {},
-  pcm: {},
-  yo: {},
-  ha: {},
-  ig: {},
-};
-
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLangState] = React.useState<LanguageCode>("en");
   const [translations, setTranslations] = React.useState<Record<string, string>>({});
 
-  // Load saved language
   React.useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as LanguageCode | null;
     if (saved && LANGUAGES.some((l) => l.code === saved)) {
@@ -36,32 +26,26 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load translations from Supabase
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const { createClient } = await import("@/lib/supabase/client");
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("translations")
-          .select("key, value")
-          .eq("language_code", language);
+        const res = await fetch(`/api/translations?lang=${language}`);
+        if (!res.ok) return;
+        const { data } = await res.json();
         if (!cancelled && data) {
           const map: Record<string, string> = {};
-          data.forEach((t) => {
+          data.forEach((t: { key: string; value: string }) => {
             map[t.key] = t.value;
           });
           setTranslations(map);
         }
       } catch {
-        // Use fallback if Supabase unavailable
+        // Offline fallback
       }
     }
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [language]);
 
   const setLanguage = React.useCallback((lang: LanguageCode) => {
@@ -87,7 +71,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 export function useI18n() {
   const ctx = React.useContext(I18nContext);
   if (!ctx) {
-    // Return safe defaults if used outside provider
     return {
       language: "en" as LanguageCode,
       setLanguage: () => {},

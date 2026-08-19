@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -23,22 +22,21 @@ export default function AdminReportsPage() {
 
   async function loadReports() {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("reports")
-      .select("*, reporter:profiles!reports_reporter_id_fkey(full_name, avatar_url), listing:listings!reports_listing_id_fkey(title, id)")
-      .order("created_at", { ascending: false });
-    setReports((data as Report[]) || []);
+    const res = await fetch("/api/admin/reports");
+    if (res.ok) {
+      const { data } = await res.json();
+      setReports((data as Report[]) || []);
+    }
     setLoading(false);
   }
 
   async function resolveReport(id: string) {
     setActionLoading(id);
-    const supabase = createClient();
-    await supabase
-      .from("reports")
-      .update({ status: "resolved" })
-      .eq("id", id);
+    await fetch("/api/admin/reports", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ report_id: id }),
+    });
     await loadReports();
     setActionLoading(null);
   }

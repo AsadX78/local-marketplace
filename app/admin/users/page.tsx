@@ -2,15 +2,13 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
-import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { timeAgo } from "@/lib/utils";
-import { Shield, Ban, UserCheck } from "lucide-react";
+import { Shield, Ban } from "lucide-react";
 import type { Profile } from "@/lib/types";
 
 export default function AdminUsersPage() {
@@ -26,29 +24,22 @@ export default function AdminUsersPage() {
 
   async function loadUsers() {
     setLoading(true);
-    const supabase = createClient();
-    let query = supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (search) {
-      query = query.ilike("full_name", `%${search}%`);
+    const params = search ? `?search=${encodeURIComponent(search)}` : "";
+    const res = await fetch(`/api/admin/users${params}`);
+    if (res.ok) {
+      const { data } = await res.json();
+      setUsers((data as Profile[]) || []);
     }
-
-    const { data } = await query;
-    setUsers((data as Profile[]) || []);
     setLoading(false);
   }
 
   async function toggleAdmin(userId: string, currentStatus: boolean) {
     setActionLoading(userId);
-    const supabase = createClient();
-    await supabase
-      .from("profiles")
-      .update({ is_admin: !currentStatus })
-      .eq("id", userId);
+    await fetch("/api/admin/users", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, is_admin: !currentStatus }),
+    });
     await loadUsers();
     setActionLoading(null);
   }

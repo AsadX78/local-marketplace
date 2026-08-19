@@ -3,14 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Avatar } from "@/components/ui/avatar";
-import { formatPrice, timeAgo } from "@/lib/utils";
-import { Users, FileText, DollarSign, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
+import { Users, FileText, DollarSign, AlertTriangle } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
@@ -32,34 +29,11 @@ export default function AdminDashboard() {
   }, [isAdmin]);
 
   async function loadStats() {
-    const supabase = createClient();
-    const [
-      { count: totalUsers },
-      { count: totalListings },
-      { count: pendingListings },
-      { count: totalTransactions },
-      { data: revenueData },
-      { count: openReports },
-    ] = await Promise.all([
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
-      supabase.from("listings").select("*", { count: "exact", head: true }),
-      supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("transactions").select("*", { count: "exact", head: true }),
-      supabase.from("transactions").select("commission_amount"),
-      supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "open"),
-    ]);
-
-    const totalRevenue = (revenueData || [])
-      .reduce((sum: number, t: { commission_amount: number }) => sum + Number(t.commission_amount || 0), 0);
-
-    setStats({
-      totalUsers: totalUsers || 0,
-      totalListings: totalListings || 0,
-      pendingListings: pendingListings || 0,
-      totalTransactions: totalTransactions || 0,
-      totalRevenue,
-      openReports: openReports || 0,
-    });
+    const res = await fetch("/api/admin/stats");
+    if (res.ok) {
+      const json = await res.json();
+      setStats(json.data || json);
+    }
     setLoading(false);
   }
 

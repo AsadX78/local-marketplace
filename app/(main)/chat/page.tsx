@@ -40,32 +40,20 @@ export default function ChatPage() {
   }, [messages]);
 
   async function loadConversations() {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("conversations")
-      .select("*, listing:listings(id, title, images), buyer:profiles!conversations_buyer_id_fkey(id, full_name, avatar_url), seller:profiles!conversations_seller_id_fkey(id, full_name, avatar_url)")
-      .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
-      .order("last_message_at", { ascending: false });
-    setConversations((data as Conversation[]) || []);
+    const res = await fetch("/api/conversations");
+    if (res.ok) {
+      const { data } = await res.json();
+      setConversations((data as Conversation[]) || []);
+    }
     setLoading(false);
   }
 
   async function loadMessages(convoId: string) {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("messages")
-      .select("*, sender:profiles!messages_sender_id_fkey(full_name, avatar_url)")
-      .eq("conversation_id", convoId)
-      .order("created_at", { ascending: true });
-    setMessages((data as Message[]) || []);
-
-    // Mark as read
-    await supabase
-      .from("messages")
-      .update({ is_read: true })
-      .eq("conversation_id", convoId)
-      .neq("sender_id", user!.id)
-      .eq("is_read", false);
+    const res = await fetch(`/api/chat/${convoId}/messages`);
+    if (res.ok) {
+      const { data } = await res.json();
+      setMessages((data as Message[]) || []);
+    }
   }
 
   function subscribeToMessages(convoId: string) {
@@ -78,15 +66,14 @@ export default function ChatPage() {
         async (payload) => {
           const msg = payload.new as Message;
           if (msg.sender_id !== user!.id) {
-            // Fetch sender profile
-            const { data: sender } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("id", msg.sender_id)
-              .single();
-            const msgWithSender = { ...msg, sender: (sender || undefined) as Message["sender"] };
-            setMessages((prev) => [...prev, msgWithSender]);
-            await supabase.from("messages").update({ is_read: true }).eq("id", msg.id);
+            const res = await fetch(`/api/auth/me`);
+            if (res.ok) {
+              const { profile } = await res.json();
+              const msgWithSender = { ...msg, sender: profile || undefined } as Message;
+              setMessages((prev) => [...prev, msgWithSender]);
+            } else {
+              setMessages((prev) => [...prev, msg]);
+            }
           }
         }
       )
@@ -96,12 +83,15 @@ export default function ChatPage() {
   async function sendMessage() {
     if (!newMessage.trim() || !activeConvo || !user) return;
     setSending(true);
-    const supabase = createClient();
-    await supabase.from("messages").insert({
-      conversation_id: activeConvo.id,
-      sender_id: user.id,
-      content: newMessage.trim(),
+    const res = await fetch(`/api/chat/${activeConvo.id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newMessage.trim() }),
     });
+    if (res.ok) {
+      const { data } = await res.json();
+      setMessages((prev) => [...prev, data]);
+    }
     setNewMessage("");
     setSending(false);
   }

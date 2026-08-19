@@ -11,24 +11,26 @@ export function useAuth() {
     useAuthStore();
   const router = useRouter();
 
-  // Initialize auth state
   React.useEffect(() => {
     const supabase = createClient();
     let mounted = true;
 
     async function init() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
 
       if (user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        if (mounted) setAuth(user, (profileData as Profile) || null);
+        try {
+          const res = await fetch("/api/auth/me");
+          if (res.ok) {
+            const { profile: profileData } = await res.json();
+            if (mounted) setAuth(user, (profileData as Profile) || null);
+          } else {
+            if (mounted) setAuth(user, null);
+          }
+        } catch {
+          if (mounted) setAuth(user, null);
+        }
       } else {
         if (mounted) setLoading(false);
       }
@@ -41,12 +43,17 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       if (session?.user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        setAuth(session.user, (profileData as Profile) || null);
+        try {
+          const res = await fetch("/api/auth/me");
+          if (res.ok) {
+            const { profile: profileData } = await res.json();
+            setAuth(session.user, (profileData as Profile) || null);
+          } else {
+            setAuth(session.user, null);
+          }
+        } catch {
+          setAuth(session.user, null);
+        }
       } else {
         setAuth(null, null);
       }

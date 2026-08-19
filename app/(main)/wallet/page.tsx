@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +21,11 @@ export default function WalletPage() {
   }, [user]);
 
   async function loadTransactions() {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("transactions")
-      .select("*, listing:listings(title), buyer:profiles!transactions_buyer_id_fkey(full_name), seller:profiles!transactions_seller_id_fkey(full_name)")
-      .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
-      .order("created_at", { ascending: false });
-    setTransactions((data as Transaction[]) || []);
+    const res = await fetch("/api/wallet");
+    if (res.ok) {
+      const { data } = await res.json();
+      setTransactions((data as Transaction[]) || []);
+    }
     setLoading(false);
   }
 

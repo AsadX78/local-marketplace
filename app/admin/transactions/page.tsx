@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, timeAgo } from "@/lib/utils";
@@ -19,13 +18,11 @@ export default function AdminTransactionsPage() {
 
   async function loadTransactions() {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("transactions")
-      .select("*, listing:listings(title), buyer:profiles!transactions_buyer_id_fkey(full_name), seller:profiles!transactions_seller_id_fkey(full_name)")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    setTransactions((data as Transaction[]) || []);
+    const res = await fetch("/api/admin/transactions");
+    if (res.ok) {
+      const { data } = await res.json();
+      setTransactions((data as Transaction[]) || []);
+    }
     setLoading(false);
   }
 
