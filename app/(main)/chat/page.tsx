@@ -31,6 +31,44 @@ export default function ChatPage() {
     loadConversations();
   }, [user]);
 
+  // Auto-create conversation when arriving with ?listing=<id>
+  React.useEffect(() => {
+    if (!user) return;
+    const listingId = params.get("listing");
+    if (!listingId) return;
+
+    async function initConversation() {
+      // Fetch listing to get seller_id
+      const listingRes = await fetch(`/api/listings/${listingId}`);
+      if (!listingRes.ok) return;
+      const { data: listing } = await listingRes.json();
+      if (!listing?.user_id) return;
+
+      // Create or find conversation
+      const convoRes = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listing_id: listingId, seller_id: listing.user_id }),
+      });
+      if (!convoRes.ok) return;
+      const { data: convo } = await convoRes.json();
+
+      // Reload conversations and select this one
+      await loadConversations();
+      if (convo?.id) {
+        // Re-fetch with relations
+        const updatedRes = await fetch("/api/conversations");
+        if (updatedRes.ok) {
+          const { data: convos } = await updatedRes.json();
+          const found = (convos as Conversation[]).find((c) => c.id === convo.id);
+          if (found) setActiveConvo(found);
+        }
+      }
+    }
+
+    initConversation();
+  }, [user, params]);
+
   React.useEffect(() => {
     if (!activeConvo?.id) return;
     loadMessages(activeConvo.id);
