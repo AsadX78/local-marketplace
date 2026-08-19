@@ -7,33 +7,47 @@ import { Badge } from "@/components/ui/badge";
 import { ListingCard } from "@/components/listings/ListingCard";
 import type { Listing, Review } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 async function getProfile(id: string) {
-  const supabase = await createServerClientInstance();
-  const { data } = await supabase.from("profiles").select("*").eq("id", id).single();
-  return data;
+  try {
+    const supabase = await createServerClientInstance();
+    const { data } = await supabase.from("profiles").select("*").eq("id", id).single();
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 async function getListings(userId: string) {
-  const supabase = await createServerClientInstance();
-  const { data } = await supabase
-    .from("listings")
-    .select("*, profile:profiles!listings_user_id_fkey(full_name, avatar_url)")
-    .eq("user_id", userId)
-    .eq("status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(20);
-  return (data as Listing[]) || [];
+  try {
+    const supabase = await createServerClientInstance();
+    const { data } = await supabase
+      .from("listings")
+      .select("*, profile:profiles!listings_user_id_fkey(full_name, avatar_url)")
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    return (data as Listing[]) || [];
+  } catch {
+    return [];
+  }
 }
 
 async function getReviews(userId: string) {
-  const supabase = await createServerClientInstance();
-  const { data } = await supabase
-    .from("reviews")
-    .select("*, reviewer:profiles!reviews_reviewer_id_fkey(full_name, avatar_url)")
-    .eq("reviewed_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(10);
-  return (data || []) as (Review & { reviewer?: { full_name: string; avatar_url: string } })[];
+  try {
+    const supabase = await createServerClientInstance();
+    const { data } = await supabase
+      .from("reviews")
+      .select("*, reviewer:profiles!reviews_reviewer_id_fkey(full_name, avatar_url)")
+      .eq("reviewed_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    return (data || []) as (Review & { reviewer?: { full_name: string; avatar_url: string } })[];
+  } catch {
+    return [];
+  }
 }
 
 export default async function ProfilePage({
