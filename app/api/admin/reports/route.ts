@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClientInstance } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createServerClientInstance>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,7 +34,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "report_id required" }, { status: 400 });
   }
 
-  const { error } = await supabase
+  const serviceClient = createServiceRoleClient();
+  const { error } = await serviceClient
     .from("reports")
     .update({ status: "resolved" })
     .eq("id", body.report_id);
