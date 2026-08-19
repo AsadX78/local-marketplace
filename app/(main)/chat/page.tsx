@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [sending, setSending] = React.useState(false);
+  const [usePolling, setUsePolling] = React.useState(false);
   const messagesEnd = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -79,8 +80,21 @@ export default function ChatPage() {
     if (!activeConvo?.id) return;
     loadMessages(activeConvo.id);
     const sub = subscribeToMessages(activeConvo.id);
+
+    if (!sub) {
+      // WebSocket failed — enable polling
+      setUsePolling(true);
+    }
+
     return () => { sub?.unsubscribe(); };
   }, [activeConvo?.id]);
+
+  // Polling fallback: refresh messages every 3s when WebSocket unavailable
+  React.useEffect(() => {
+    if (!usePolling || !activeConvo?.id) return;
+    const interval = setInterval(() => loadMessages(activeConvo.id), 3000);
+    return () => clearInterval(interval);
+  }, [usePolling, activeConvo?.id]);
 
   React.useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,27 +118,32 @@ export default function ChatPage() {
   }
 
   function subscribeToMessages(convoId: string) {
-    const supabase = createClient();
-    return supabase
-      .channel(`messages:${convoId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${convoId}` },
-        async (payload) => {
-          const msg = payload.new as Message;
-          if (msg.sender_id !== user!.id) {
-            const res = await fetch(`/api/auth/me`);
-            if (res.ok) {
-              const { profile } = await res.json();
-              const msgWithSender = { ...msg, sender: profile || undefined } as Message;
-              setMessages((prev) => [...prev, msgWithSender]);
-            } else {
-              setMessages((prev) => [...prev, msg]);
+    try {
+      const supabase = createClient();
+      return supabase
+        .channel(`messages:${convoId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${convoId}` },
+          async (payload) => {
+            const msg = payload.new as Message;
+            if (msg.sender_id !== user!.id) {
+              const res = await fetch(`/api/auth/me`);
+              if (res.ok) {
+                const { profile } = await res.json();
+                const msgWithSender = { ...msg, sender: profile || undefined } as Message;
+                setMessages((prev) => [...prev, msgWithSender]);
+              } else {
+                setMessages((prev) => [...prev, msg]);
+              }
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch {
+      // WebSocket not available — polling fallback handles this
+      return null;
+    }
   }
 
   async function sendMessage() {
