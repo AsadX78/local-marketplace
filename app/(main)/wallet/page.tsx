@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { formatPrice, timeAgo } from "@/lib/utils";
 import { Wallet, ArrowUpRight, ArrowDownLeft, Clock } from "lucide-react";
+import { TransactionActions } from "@/components/wallet/TransactionActions";
 import type { Transaction } from "@/lib/types";
 
 export default function WalletPage() {
@@ -146,9 +147,18 @@ export default function WalletPage() {
                       {tx.buyer_id === user.id ? "-" : "+"}
                       {formatPrice(Number(tx.amount) - (tx.buyer_id === user.id ? 0 : Number(tx.commission_amount)))}
                     </p>
-                    <Badge className={statusColors[tx.status] || ""}>
-                      {tx.status}
-                    </Badge>
+                    <div className="mt-1 flex items-center justify-end gap-2">
+                      <Badge className={statusColors[tx.status] || ""}>
+                        {tx.status}
+                      </Badge>
+                      <TransactionActions
+                        transactionId={tx.id}
+                        status={tx.status}
+                        isBuyer={tx.buyer_id === user.id}
+                        isSeller={tx.seller_id === user.id}
+                        onStatusChange={loadTransactions}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

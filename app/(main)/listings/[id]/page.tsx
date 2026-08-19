@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ImageCarousel } from "@/components/listings/ImageCarousel";
 import { MapView } from "@/components/listings/MapViewLoader";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
+import { BuyNowButton } from "@/components/listings/BuyNowButton";
 
 export const dynamicRoute = "force-dynamic";
 
@@ -244,7 +245,7 @@ export default async function ListingDetailPage({
         <div className="space-y-6 lg:sticky lg:top-20 lg:h-fit">
           {/* Action buttons */}
           <div className="flex gap-2">
-            <Button variant="brand" className="flex-1" size="lg">
+            <Button variant="outline" className="flex-1" size="lg" asChild>
               <Link href={`/chat?listing=${listing.id}`}>Contact Seller</Link>
             </Button>
             <Button variant="outline" size="icon" aria-label="Save">
@@ -254,6 +255,16 @@ export default async function ListingDetailPage({
               <Share2 className="h-5 w-5" />
             </Button>
           </div>
+
+          {/* Buy Now button */}
+          {listing.price && listing.price > 0 && listing.status === "approved" && (
+            <BuyNowButton
+              listingId={listing.id}
+              price={listing.price}
+              sellerId={listing.user_id}
+              isSold={listing.status === "sold"}
+            />
+          )}
 
           {/* Payment info */}
           {listing.price && listing.price > 0 && (

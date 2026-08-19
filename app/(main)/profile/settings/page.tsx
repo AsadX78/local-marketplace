@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
 import { NIGERIAN_STATES, LANGUAGES } from "@/lib/constants";
+import { StripeOnboardButton } from "@/components/profile/StripeOnboardButton";
 
 export default function SettingsPage() {
   const { user, profile, setProfile } = useAuth();
@@ -256,6 +257,11 @@ export default function SettingsPage() {
                 </p>
               </div>
             </label>
+            {form.is_seller && (
+              <div className="mt-2">
+                <StripeOnboardButton hasStripeAccount={!!(profile as unknown as Record<string, unknown>)?.stripe_account_id} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
