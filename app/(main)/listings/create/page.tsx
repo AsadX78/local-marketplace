@@ -88,6 +88,26 @@ export default function CreateListingPage() {
   async function handleSubmit() {
     if (!user) return;
     setError(null);
+
+    // Validate against DB CHECK constraints before submitting
+    const title = form.title.trim();
+    const description = form.description.trim();
+    if (title.length < 5 || title.length > 200) {
+      setError("Title must be between 5 and 200 characters.");
+      return;
+    }
+    if (description.length < 10 || description.length > 5000) {
+      setError("Description must be between 10 and 5000 characters.");
+      return;
+    }
+    if (form.price) {
+      const p = parseFloat(form.price);
+      if (isNaN(p) || p < 0) {
+        setError("Price must be a valid number of 0 or more.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -116,8 +136,8 @@ export default function CreateListingPage() {
       const { error: insertError } = await supabase.from("listings").insert({
         user_id: user.id,
         category_id: categoryId,
-        title: form.title,
-        description: form.description,
+        title,
+        description,
         price: form.price ? parseFloat(form.price) : null,
         price_negotiable: form.priceNegotiable,
         images: imageUrls,
