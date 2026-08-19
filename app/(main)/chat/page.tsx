@@ -42,7 +42,7 @@ export default function ChatPage() {
       const listingRes = await fetch(`/api/listings/${listingId}`);
       if (!listingRes.ok) return;
       const { data: listing } = await listingRes.json();
-      if (!listing?.user_id) return;
+      if (!listing?.user_id || listing.user_id === user!.id) return;
 
       // Create or find conversation
       const convoRes = await fetch("/api/conversations", {
@@ -52,18 +52,24 @@ export default function ChatPage() {
       });
       if (!convoRes.ok) return;
       const { data: convo } = await convoRes.json();
+      if (!convo?.id) return;
 
-      // Reload conversations and select this one
-      await loadConversations();
-      if (convo?.id) {
-        // Re-fetch with relations
-        const updatedRes = await fetch("/api/conversations");
-        if (updatedRes.ok) {
-          const { data: convos } = await updatedRes.json();
-          const found = (convos as Conversation[]).find((c) => c.id === convo.id);
-          if (found) setActiveConvo(found);
-        }
-      }
+      // Build a minimal conversation object and select it immediately
+      setActiveConvo({
+        id: convo.id,
+        buyer_id: user!.id,
+        seller_id: listing.user_id,
+        listing_id: listingId,
+        listing: { id: listing.id, title: listing.title, price: listing.price, images: listing.images, status: listing.status },
+        buyer: undefined,
+        seller: undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_message_at: null,
+      } as unknown as Conversation);
+
+      // Reload sidebar in background
+      loadConversations();
     }
 
     initConversation();
