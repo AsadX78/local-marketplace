@@ -17,7 +17,7 @@ const fadeUp = {
 
 export function HomeHero() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800">
+    <section className="relative overflow-hidden bg-gradient-to-br from-brand-700 via-brand-600 to-emerald-700">
       <div className="absolute inset-0 opacity-20">
         <motion.div
           animate={{ scale: [1, 1.1, 1], x: [0, 10, 0] }}
