@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClientInstance } from "@/lib/supabase/server";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
-});
+import { createServerClientInstance, getStripe } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClientInstance();
@@ -29,6 +24,7 @@ export async function POST(request: NextRequest) {
 
   try {
     let accountId = profile.stripe_account_id;
+    const stripe = getStripe();
 
     if (!accountId) {
       // Create a new Stripe Connect account

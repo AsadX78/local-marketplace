@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClientInstance } from "@/lib/supabase/server";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
-});
+import { createServerClientInstance, getStripe } from "@/lib/supabase/server";
 
 const COMMISSION_RATE = 0.05;
 
@@ -58,6 +53,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // Create Stripe Checkout Session with Connect
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [

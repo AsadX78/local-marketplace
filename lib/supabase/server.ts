@@ -54,3 +54,23 @@ export function createServiceRoleClient() {
     },
   });
 }
+
+/**
+ * Lazy Stripe client initialization.
+ * Avoids module-load errors when STRIPE_SECRET_KEY is a placeholder.
+ */
+type StripeClient = import('stripe').default;
+let _stripe: StripeClient | null = null;
+export function getStripe(): StripeClient {
+  if (_stripe) return _stripe;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || !key.startsWith('sk_')) {
+    throw new Error('STRIPE_SECRET_KEY is not configured. Add a valid Stripe secret key to enable payments.');
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const Stripe = require('stripe');
+  _stripe = new Stripe.default(key, {
+    apiVersion: '2024-12-18.acacia',
+  }) as StripeClient;
+  return _stripe;
+}

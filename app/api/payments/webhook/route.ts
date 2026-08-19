@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia" as Stripe.LatestApiVersion,
-});
+import type Stripe from "stripe";
+import { createServiceRoleClient, getStripe } from "@/lib/supabase/server";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
+  const stripe = getStripe();
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
 
