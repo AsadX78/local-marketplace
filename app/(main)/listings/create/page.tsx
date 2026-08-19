@@ -24,6 +24,23 @@ export default function CreateListingPage() {
   const [images, setImages] = React.useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = React.useState<string[]>([]);
   const [selectedState, setSelectedState] = React.useState("");
+  const [categoryMap, setCategoryMap] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("categories")
+      .select("id, slug")
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, string> = {};
+          (data as { slug: string; id: string }[]).forEach((c) => {
+            map[c.slug] = c.id;
+          });
+          setCategoryMap(map);
+        }
+      });
+  }, []);
 
   const [form, setForm] = React.useState({
     title: "",
@@ -91,10 +108,14 @@ export default function CreateListingPage() {
         imageUrls.push(urlData.publicUrl);
       }
 
+      // Resolve category slug -> UUID
+      const categoryId = categoryMap[form.subcategory] || categoryMap[form.category];
+      if (!categoryId) throw new Error("Please select a valid category");
+
       // Create listing
       const { error: insertError } = await supabase.from("listings").insert({
         user_id: user.id,
-        category_id: form.subcategory || form.category,
+        category_id: categoryId,
         title: form.title,
         description: form.description,
         price: form.price ? parseFloat(form.price) : null,
